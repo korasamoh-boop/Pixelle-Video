@@ -1,0 +1,68 @@
+name: Daily AI Videos
+
+on:
+  # الجدولة اليومية معطلة في البداية. بعد أن ينجح التشغيل اليدوي احذف علامة # من السطرين التاليين.
+  # schedule:
+  #   - cron: "0 6 * * *"
+  workflow_dispatch:
+    inputs:
+      mode:
+        description: "check = فحص المشروع فقط (بدون تكلفة) | make = إنتاج الفيديوهات"
+        default: "check"
+        type: choice
+        options:
+          - check
+          - make
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 180
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: astral-sh/setup-uv@v5
+
+      - name: Install ffmpeg
+        run: sudo apt-get update && sudo apt-get install -y ffmpeg
+
+      - name: Install project dependencies
+        run: uv sync
+
+      - name: Install browser used by video templates
+        run: uv run playwright install --with-deps chromium
+
+      - name: Run
+        env:
+          MODE: ${{ github.event.inputs.mode || 'make' }}
+          LLM_API_KEY: ${{ secrets.LLM_API_KEY }}
+          LLM_BASE_URL: ${{ vars.LLM_BASE_URL }}
+          LLM_MODEL: ${{ vars.LLM_MODEL }}
+          IMAGE_WORKFLOW: ${{ vars.IMAGE_WORKFLOW }}
+          EXTRA_CONFIG_YAML: ${{ secrets.EXTRA_CONFIG_YAML }}
+          VIDEOS_LONG: ${{ vars.VIDEOS_LONG }}
+          VIDEOS_SHORT: ${{ vars.VIDEOS_SHORT }}
+          VOICE: ${{ vars.VOICE }}
+          SHORT_TEMPLATE: ${{ vars.SHORT_TEMPLATE }}
+          LONG_TEMPLATE: ${{ vars.LONG_TEMPLATE }}
+        run: uv run python scripts/daily.py
+
+      - name: Upload videos
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: videos-${{ github.run_number }}
+          path: out/
+          if-no-files-found: ignore
+          retention-days: 14
+
+      - name: Save topic history
+        if: always()
+        run: |
+          git config user.name "github-actions"
+          git config user.email "actions@github.com"
+          git add scripts/history.txt || true
+          git diff --cached --quiet || (git commit -m "update topic history" && git push)

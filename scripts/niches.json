@@ -1,0 +1,7 @@
+[
+  {"name": "Space and Science", "seeds": ["space facts", "science explained", "how does"]},
+  {"name": "Psychology and Habits", "seeds": ["psychology facts", "habits that", "productivity tips"]},
+  {"name": "History and Mysteries", "seeds": ["history facts", "unsolved mysteries", "ancient civilizations"]},
+  {"name": "Technology Explained", "seeds": ["how technology works", "ai explained", "future of"]},
+  {"name": "Animals and Nature", "seeds": ["animal facts", "deep ocean", "amazing nature"]}
+]
